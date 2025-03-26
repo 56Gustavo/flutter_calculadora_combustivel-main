@@ -19,6 +19,7 @@ dependencies:
   url_launcher: ^6.1.14
   syncfusion_flutter_charts: ^28.2.7
   audioplayers: ^0.20.1
+  lottie: ^2.2.0 
 
 
 dev_dependencies:
@@ -32,3 +33,4 @@ flutter:
   assets:
     - assets/icone_posto.png
     - assets/sounds/sata.mp3
+    - assets/animations/fire_flame.json
