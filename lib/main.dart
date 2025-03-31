@@ -15,13 +15,13 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // Variável para controlar o modo de tema
   bool _isDarkMode = false;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Calculadora de Combustível',
+      debugShowCheckedModeBanner: false,  // Removendo o banner de debug
       theme: ThemeData(
         brightness: _isDarkMode ? Brightness.dark : Brightness.light,
         primarySwatch: Colors.blue,
@@ -33,7 +33,6 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  // Função para alternar o tema
   void _toggleTheme() {
     setState(() {
       _isDarkMode = !_isDarkMode;
@@ -58,6 +57,13 @@ class _FuelCalculatorState extends State<FuelCalculator> {
   late AudioPlayer _audioPlayer;
   late AudioCache _audioCache;
   bool _showFireAnimation = false;  // Variável para controlar se a animação de fogo deve ser exibida
+
+  // Lista de registros de trocas de óleo
+  List<Map<String, String>> _oilChangeHistory = [];
+
+  // Controladores para os campos de entrada da troca de óleo
+  final TextEditingController _oilChangeDateController = TextEditingController();
+  final TextEditingController _oilChangeMileageController = TextEditingController();
 
   @override
   void initState() {
@@ -117,11 +123,32 @@ class _FuelCalculatorState extends State<FuelCalculator> {
     }
   }
 
+  // Função para adicionar uma troca de óleo
+  void _addOilChange() {
+    final date = _oilChangeDateController.text;
+    final mileage = _oilChangeMileageController.text;
+
+    if (date.isNotEmpty && mileage.isNotEmpty) {
+      setState(() {
+        _oilChangeHistory.add({'Data': date, 'Quilometragem': mileage});
+        _oilChangeDateController.clear();
+        _oilChangeMileageController.clear();
+      });
+    }
+  }
+
+  // Função para excluir uma troca de óleo
+  void _removeOilChange(int index) {
+    setState(() {
+      _oilChangeHistory.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Calculadora de Combustível'),
+        title: Text('Calculadora de Combustível', textAlign: TextAlign.center), // Centralizando o título
         actions: [
           IconButton(
             icon: Icon(widget.isDarkMode ? Icons.wb_sunny : Icons.nightlight_round),
@@ -133,17 +160,15 @@ class _FuelCalculatorState extends State<FuelCalculator> {
       ),
       body: Stack(
         children: [
-          // Imagem de fundo ocupando toda a tela
           Positioned.fill(
             child: Opacity(
-              opacity: widget.isDarkMode ? 0.4 : 0.1, // Opacidade maior no tema escuro
+              opacity: widget.isDarkMode ? 0.4 : 0.1,
               child: Image.asset(
                 'assets/icone_posto.png',
-                fit: BoxFit.cover, // A imagem cobre toda a tela
+                fit: BoxFit.cover,
               ),
             ),
           ),
-          // Conteúdo da tela
           Center(
             child: SingleChildScrollView(
               child: Container(
@@ -161,6 +186,9 @@ class _FuelCalculatorState extends State<FuelCalculator> {
                         border: OutlineInputBorder(
                           borderSide: BorderSide(color: Colors.red[800]!),
                         ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.red, width: 2), // Borda de foco vermelha
+                        ),
                         filled: true,
                         fillColor: Colors.transparent,
                       ),
@@ -175,6 +203,9 @@ class _FuelCalculatorState extends State<FuelCalculator> {
                         border: OutlineInputBorder(
                           borderSide: BorderSide(color: Colors.red[800]!),
                         ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.red, width: 2), // Borda de foco vermelha
+                        ),
                         filled: true,
                         fillColor: Colors.transparent,
                       ),
@@ -186,8 +217,8 @@ class _FuelCalculatorState extends State<FuelCalculator> {
                       children: <Widget>[
                         InkWell(
                           onTap: _calculateFuel,
-                          splashColor: Colors.green,
-                          highlightColor: Colors.green[200],
+                          splashColor: Colors.red,
+                          highlightColor: Colors.red[200],
                           borderRadius: BorderRadius.circular(10),
                           child: Ink(
                             padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
@@ -224,8 +255,8 @@ class _FuelCalculatorState extends State<FuelCalculator> {
                         SizedBox(width: 16),
                         InkWell(
                           onTap: _openUrl,
-                          splashColor: const Color.fromARGB(255, 243, 212, 33),
-                          highlightColor: const Color.fromARGB(255, 249, 242, 144),
+                          splashColor: Colors.red,
+                          highlightColor: Colors.red[200],
                           borderRadius: BorderRadius.circular(10),
                           child: Ink(
                             padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
@@ -251,20 +282,110 @@ class _FuelCalculatorState extends State<FuelCalculator> {
                         color: _resultMessage == 'Abasteça com Álcool' ? Colors.green : Colors.red[800],
                       ),
                     ),
-                    // Exibe a animação de chamas de fogo
                     if (_showFireAnimation)
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Lottie.asset(
-                          'assets/animations/fire_flame.json',
-                          
-                          width: MediaQuery.of(context).size.width, // A animação vai ocupar toda a largura da tela
-                          fit: BoxFit.cover, // Faz a animação preencher completamente a tela
-                          repeat: false, // A animação vai ser executada apenas uma vez
+                      Align(
+                        alignment: Alignment.center,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 50.0),
+                          child: Lottie.asset(
+                            'assets/animations/fire_flame.json',
+                            width: 500,
+                            height: 500,
+                            fit: BoxFit.cover,
+                            repeat: false,
+                          ),
                         ),
                       ),
+                    SizedBox(height: 30),
+                    // Título centralizado
+                    Text(
+                      'Histórico de Trocas de Óleo',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red[800]),
+                      textAlign: TextAlign.center,  // Centralizando o título
+                    ),
+                    SizedBox(height: 10),
+                    DataTable(
+                      columns: [
+                        DataColumn(label: Text('Data', style: TextStyle(color: Colors.red[800]))),
+                        DataColumn(label: Text('Quilometragem', style: TextStyle(color: Colors.red[800]))),
+                        DataColumn(label: Text('Ações', style: TextStyle(color: Colors.red[800]))),
+                      ],
+                      rows: _oilChangeHistory.map((oilChange) {
+                        int index = _oilChangeHistory.indexOf(oilChange);
+                        return DataRow(cells: [
+                          DataCell(Text(oilChange['Data']!, style: TextStyle(color: Colors.red[800]))),
+                          DataCell(Text(oilChange['Quilometragem']!, style: TextStyle(color: Colors.red[800]))),
+                          DataCell(
+                            MouseRegion(
+                              onEnter: (_) {
+                                setState(() {
+                                  // Mostrar o ícone da lixeira quando o mouse entrar
+                                });
+                              },
+                              onExit: (_) {
+                                setState(() {
+                                  // Esconder o ícone da lixeira quando o mouse sair
+                                });
+                              },
+                              child: IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _removeOilChange(index),
+                              ),
+                            ),
+                          ),
+                        ]);
+                      }).toList(),
+                    ),
+                    SizedBox(height: 10),
+                    // Formulário para adicionar uma nova troca de óleo
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: TextField(
+                            controller: _oilChangeDateController,
+                            decoration: InputDecoration(
+                              labelText: 'Data da Troca',
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red, width: 2), // Borda de foco vermelha
+                              ),
+                            ),
+                            keyboardType: TextInputType.text,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _oilChangeMileageController,
+                            decoration: InputDecoration(
+                              labelText: 'Quilometragem',
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red, width: 2), // Borda de foco vermelha
+                              ),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        InkWell(
+                          onTap: _addOilChange,
+                          splashColor: Colors.red,
+                          highlightColor: Colors.red[200],
+                          borderRadius: BorderRadius.circular(10),
+                          child: Ink(
+                            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.red[800]!, width: 2),
+                            ),
+                            child: Text(
+                              'Adicionar Troca de Óleo',
+                              style: TextStyle(color: Colors.red[800], fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
